@@ -55,25 +55,25 @@ function text(obj) {
   return { content: [{ type: "text", text: speech }], structuredContent: obj };
 }
 
-export function callTool(name, args = {}, ctx = {}) {
+export async function callTool(name, args = {}, ctx = {}) {
   try {
     if (name === "get_status") {
       const parsed = cleanId(args.id);
       if (parsed.error === "need_id") return fail(CODE.NEED_ID, "Which request number?");
       if (parsed.error) return fail(CODE.INVALID, "That is not a request number.");
-      const row = getStatus(parsed.id);
+      const row = await getStatus(parsed.id);
       if (!row) return fail(CODE.NOT_FOUND, "Request not found.");
       return text({ row, speech: speakStatus(row) });
     }
     if (name === "get_mine") {
-      const result = getMine(args.sub || ctx.sub);
+      const result = await getMine(args.sub || ctx.sub);
       if (result.kind === "need_account") {
         return fail(CODE.NEED_ACCOUNT, speakMine(result), { result });
       }
       return text({ result, speech: speakMine(result) });
     }
     if (name === "list_open") {
-      const rows = listOpen();
+      const rows = await listOpen();
       return text({ rows, speech: `${rows.length} open requests.` });
     }
     if (name === "set_owner") {
@@ -82,7 +82,7 @@ export function callTool(name, args = {}, ctx = {}) {
       if (parsed.error) return fail(CODE.INVALID, "That is not a request number.");
       const who = cleanOwner(args.owner);
       if (who.error) return fail(CODE.INVALID, "Which owner?");
-      const row = setOwner(parsed.id, who.owner, ctx.sub);
+      const row = await setOwner(parsed.id, who.owner, ctx.sub);
       if (!row) return fail(CODE.NOT_FOUND, "Request not found.");
       return text({ row, speech: speakStatus(row) });
     }
@@ -94,7 +94,7 @@ export function callTool(name, args = {}, ctx = {}) {
       if (next !== "open" && next !== "closed") {
         return fail(CODE.INVALID, "Status must be open or closed.");
       }
-      const row = setStatus(parsed.id, next, ctx.sub);
+      const row = await setStatus(parsed.id, next, ctx.sub);
       if (!row) return fail(CODE.NOT_FOUND, "Request not found.");
       if (row.error) return fail(CODE.INVALID, "Status must be open or closed.");
       return text({ row, speech: speakStatus(row) });
@@ -107,7 +107,7 @@ export function callTool(name, args = {}, ctx = {}) {
   }
 }
 
-export function handleRpc(payload, ctx = {}) {
+export async function handleRpc(payload, ctx = {}) {
   if (!payload || typeof payload !== "object") {
     return { jsonrpc: "2.0", error: { code: -32700, message: "parse error" } };
   }
@@ -135,7 +135,7 @@ export function handleRpc(payload, ctx = {}) {
       return { jsonrpc: "2.0", id, error: { code: CODE.INVALID, message: "missing tool name" } };
     }
     const args = (params && params.arguments) || {};
-    const result = callTool(name, args, ctx);
+    const result = await callTool(name, args, ctx);
     if (result && result.isError && result.code <= -32600 && result.code >= -32768 && !result.structuredContent) {
       return { jsonrpc: "2.0", id, error: { code: result.code, message: result.speech } };
     }
