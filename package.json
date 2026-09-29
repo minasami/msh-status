@@ -7,7 +7,8 @@
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node --watch src/server.js"
+    "dev": "node --watch src/server.js",
+    "test": "MSH_NO_PERSIST=1 node tests/status.test.mjs"
   },
   "engines": { "node": ">=20" }
 }
