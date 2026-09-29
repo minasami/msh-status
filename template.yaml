@@ -1,0 +1,56 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: msh-status MCP on Lambda Function URL (Alexa+ / AWS Builder)
+
+Parameters:
+  MshToken:
+    Type: String
+    NoEcho: true
+    Default: change-me
+    Description: Bearer token for POST /mcp
+  BedrockModel:
+    Type: String
+    Default: amazon.nova-micro-v1:0
+
+Globals:
+  Function:
+    Timeout: 15
+    MemorySize: 256
+    Runtime: nodejs20.x
+
+Resources:
+  MshStatusFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: msh-status
+      Handler: src/lambda.handler
+      CodeUri: .
+      Architectures: [x86_64]
+      Environment:
+        Variables:
+          MSH_MCP_TOKEN: !Ref MshToken
+          BEDROCK_MODEL_ID: !Ref BedrockModel
+          MSH_NO_PERSIST: "1"
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+                - bedrock:Converse
+              Resource: "*"
+      FunctionUrlConfig:
+        AuthType: NONE
+        Cors:
+          AllowOrigins:
+            - "*"
+          AllowMethods:
+            - GET
+            - POST
+          AllowHeaders:
+            - content-type
+            - authorization
+
+Outputs:
+  FunctionUrl:
+    Description: Public HTTPS. GET /health  POST /mcp
+    Value: !GetAtt MshStatusFnUrl.FunctionUrl
