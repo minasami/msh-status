@@ -10,5 +10,8 @@
     "dev": "node --watch src/server.js",
     "test": "MSH_NO_PERSIST=1 node tests/status.test.mjs"
   },
-  "engines": { "node": ">=20" }
+  "engines": { "node": ">=20" },
+  "optionalDependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.686.0"
+  }
 }
